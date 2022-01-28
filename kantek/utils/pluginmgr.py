@@ -188,8 +188,7 @@ class PluginManager:
         skip_args = 1
         help_topic = [cmd.commands[0]]
         if cmd.subcommands:
-            raw_args = msg.raw_text.split()[1:]
-            if raw_args:
+            if raw_args := msg.raw_text.split()[1:]:
                 subcommand: Optional[_SubCommand] = cmd.subcommands.get(raw_args[0])
                 if subcommand:
                     callback = subcommand.callback
@@ -233,11 +232,10 @@ class PluginManager:
         if args.msg:
             callback_args['msg'] = event.message
 
-        if args.args or args.kwargs:
-            if args.args:
-                callback_args['args'] = _args
-            if args.kwargs:
-                callback_args['kwargs'] = _kwargs
+        if args.args:
+            callback_args['args'] = _args
+        if args.kwargs:
+            callback_args['kwargs'] = _kwargs
 
         if args.event:
             callback_args['event'] = event

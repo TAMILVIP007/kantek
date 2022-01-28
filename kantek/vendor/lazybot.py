@@ -29,10 +29,9 @@ class Bot:
         for c in text:
             if c == '_':
                 last_char_was_underscore = True
+            elif last_char_was_underscore:
+                _text.append(c.upper())
+                last_char_was_underscore = False
             else:
-                if last_char_was_underscore:
-                    _text.append(c.upper())
-                    last_char_was_underscore = False
-                else:
-                    _text.append(c)
+                _text.append(c)
         return ''.join(_text)

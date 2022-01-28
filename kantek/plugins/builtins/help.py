@@ -34,41 +34,36 @@ async def help_(client: Client, args, kwargs) -> MDTeXDocument:
         for name, cmd in cmds.items():
             if cmd.document:
                 _cmds.append(', '.join(cmd.commands))
-        _events = []
         toc.append(Section('Command List', *sorted(_cmds)))
-        for e in events:
-            if e.name:
-                _events.append(e.name)
+        _events = [e.name for e in events if e.name]
         toc.append(Section('Event List', *sorted(_events)))
         toc.append(Section('Misc', 'parsers'))
         toc.append(Italic('Provide a command/event name as argument to get help for it.'))
         return toc
-    if args:
-        topic, *subtopic = args
-        if topic in MISC_TOPICS:
-            return get_misc_topics(topic, subtopic)
-        cmd = cmds.get(topic)
-        if cmd is None:
-            for _cmd in cmds.values():
-                if topic in _cmd.commands:
-                    cmd = _cmd
-                    break
-            for _event in events:
-                if _event.name == topic:
-                    cmd = _event
-                    break
-            if cmd is None:
-                return MDTeXDocument(Section('Error', f'Unknown command or event {Code(topic)}'))
-        if isinstance(cmd, _Command):
-            return get_command_info(cmd, subtopic, config)
-        elif isinstance(cmd, _Event):
-            return get_event_info(cmd, subtopic, config)
+    topic, *subtopic = args
+    if topic in MISC_TOPICS:
+        return get_misc_topics(topic, subtopic)
+    cmd = cmds.get(topic)
+    if cmd is None:
+        for _cmd in cmds.values():
+            if topic in _cmd.commands:
+                cmd = _cmd
+                break
+        for _event in events:
+            if _event.name == topic:
+                cmd = _event
+                break
+    if cmd is None:
+        return MDTeXDocument(Section('Error', f'Unknown command or event {Code(topic)}'))
+    if isinstance(cmd, _Command):
+        return get_command_info(cmd, subtopic, config)
+    elif isinstance(cmd, _Event):
+        return get_event_info(cmd, subtopic, config)
 
 
 def get_event_info(event, subcommands, config) -> MDTeXDocument:
     description = get_description(event.callback, '')
-    help_msg = MDTeXDocument(Section(f'Help for {event.name}'), description)
-    return help_msg
+    return MDTeXDocument(Section(f'Help for {event.name}'), description)
 
 
 def get_command_info(cmd, subcommands, config) -> MDTeXDocument:
@@ -95,8 +90,7 @@ def get_command_info(cmd, subcommands, config) -> MDTeXDocument:
                 subcommands.append(KeyValueItem(Italic(Bold(name)), sc_description,
                                                 colon_styles=(Bold, Italic)))
             help_msg.append(subcommands)
-        return help_msg
-    elif subcommands:
+    else:
         subcommand = cmd.subcommands.get(subcommands[0])
 
         if subcommand is None:
@@ -107,7 +101,7 @@ def get_command_info(cmd, subcommands, config) -> MDTeXDocument:
 
         help_msg = MDTeXDocument(Section(f'Help for {help_cmd}'), description)
 
-        return help_msg
+    return help_msg
 
 
 def get_description(callback: Callable, help_cmd: str) -> str:
@@ -122,20 +116,25 @@ def get_description(callback: Callable, help_cmd: str) -> str:
 
 def get_misc_topics(topic, subtopics) -> MDTeXDocument:
     config = Config()
-    subtopic = None
-    if subtopics:
-        subtopic = subtopics[0]
+    subtopic = subtopics[0] if subtopics else None
     if topic == 'parsers':
         if not subtopic:
             return MDTeXDocument(
-                Section(f'Available Parsers',
-                        KeyValueItem(Italic(Bold('time')),
-                                     'Specify durations with a shorthand',
-                                     colon_styles=(Bold, Italic)),
-                        KeyValueItem(Italic(Bold('args')),
-                                     'Examples for the argument parser',
-                                     colon_styles=(Bold, Italic)))
+                Section(
+                    'Available Parsers',
+                    KeyValueItem(
+                        Italic(Bold('time')),
+                        'Specify durations with a shorthand',
+                        colon_styles=(Bold, Italic),
+                    ),
+                    KeyValueItem(
+                        Italic(Bold('args')),
+                        'Examples for the argument parser',
+                        colon_styles=(Bold, Italic),
+                    ),
+                )
             )
+
         elif subtopic == 'time':
             return MDTeXDocument(
                 Section('Time'),

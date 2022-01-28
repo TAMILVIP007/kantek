@@ -22,13 +22,12 @@ async def puge(client: Client, chat: Channel, msg: Message, args, event) -> None
     """
     await msg.delete()
     if not msg.is_reply:
-        if args:
-            count = args[0]
-            message_ids = [msg.id]
-            async for m in client.iter_messages(chat, limit=count, offset_id=msg.id):
-                message_ids.append(m.id)
-        else:
+        if not args:
             return
+        count = args[0]
+        message_ids = [msg.id]
+        async for m in client.iter_messages(chat, limit=count, offset_id=msg.id):
+            message_ids.append(m.id)
     else:
         reply_msg: Message = await msg.get_reply_message()
         if event.is_private:

@@ -87,12 +87,11 @@ async def resolve_invite_link(link):
 
     """
     encoded_link = re.search(INVITELINK_PATTERN, link)
-    if encoded_link is not None:
-        encoded_link = encoded_link.group(1)
-        invite_link = f't.me/joinchat/{encoded_link}'
-        return utils.resolve_invite_link(invite_link)
-    else:
+    if encoded_link is None:
         return None, None, None
+    encoded_link = encoded_link.group(1)
+    invite_link = f't.me/joinchat/{encoded_link}'
+    return utils.resolve_invite_link(invite_link)
 
 
 async def netloc(url: str) -> str:
@@ -117,17 +116,13 @@ async def hash_photo(photo):
 
 async def get_linked_message(client, link):
     """Get the message from a message link"""
-    match = MESSAGE_LINK_PATTERN.search(link)
-    if not match:
-        return None
-    else:
+    if match := MESSAGE_LINK_PATTERN.search(link):
         chat = match.group('chat')
-        if chat.isnumeric():
-            chat = int(chat)
-        else:
-            chat = f'@{chat}'
+        chat = int(chat) if chat.isnumeric() else f'@{chat}'
         msg_id = int(match.group('id'))
         return await client.iter_messages(entity=chat, ids=[msg_id]).__anext__()
+    else:
+        return None
 
 
 async def textify_message(msg: Message):
@@ -145,11 +140,9 @@ async def textify_message(msg: Message):
         message.append('[audio]')
     elif msg.contact:
         message.append('[contact]')
-    elif msg.sticker:
-        message.append('[sticker]')
     if message:
         message.append('')
-    message.append(msg.text if msg.text else '[no text/caption]')
+    message.append(msg.text or '[no text/caption]')
     return '\n'.join(message)
 
 
@@ -162,8 +155,7 @@ async def create_strafanzeige(uid, msg: Message):
         chat_id = msg.chat_id
     msg_id = msg.id
     msg_link = f't.me/c/{chat_id}/{msg_id}'
-    data = f'{uid} link:{msg_link}'
-    return data
+    return f'{uid} link:{msg_link}'
 
 
 def get_commit():

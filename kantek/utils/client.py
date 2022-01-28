@@ -212,8 +212,7 @@ class Client(TelegramClient):  # pylint: disable = R0901, W0223
             # split up the result to only get the base domain
             # www.sitischu.com => sitischu.com
             url: Optional[str] = url.host
-            _base_domain = url.split('.', maxsplit=url.count('.') - 1)[-1]
-            if _base_domain:
+            if _base_domain := url.split('.', maxsplit=url.count('.') - 1)[-1]:
                 url: str = _base_domain
         return str(url)
 

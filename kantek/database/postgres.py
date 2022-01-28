@@ -58,21 +58,17 @@ class AutobahnBlacklist(TableWrapper):
     async def get_by_value(self, item: str) -> Optional[BlacklistItem]:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(f"SELECT * FROM blacklists.{self.name} WHERE item = $1", str(item))
-        if row:
-            if row['retired']:
-                return None
-            else:
-                return BlacklistItem(row['id'], row['item'], row['retired'])
-        else:
+        if not row:
             return None
+        if row['retired']:
+            return None
+        else:
+            return BlacklistItem(row['id'], row['item'], row['retired'])
 
     async def get(self, index):
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(f"SELECT * FROM blacklists.{self.name} WHERE id = $1", index)
-        if row:
-            return BlacklistItem(row['id'], row['item'], row['retired'])
-        else:
-            return None
+        return BlacklistItem(row['id'], row['item'], row['retired']) if row else None
 
     async def retire(self, item):
         async with self.pool.acquire() as conn:
@@ -149,7 +145,10 @@ class BanList(TableWrapper):
 
     async def get_multiple(self, uids, _) -> List[BannedUser]:
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch(f"SELECT * FROM banlist WHERE id = ANY($1::BIGINT[])", uids)
+            rows = await conn.fetch(
+                'SELECT * FROM banlist WHERE id = ANY($1::BIGINT[])', uids
+            )
+
         return [BannedUser(row['id'], row['reason']) for row in rows]
 
     async def count_reason(self, reason, _) -> int:
@@ -182,7 +181,10 @@ class BanList(TableWrapper):
     async def get_all_not_in(self, not_in, _) -> List[BannedUser]:
         not_in = list(map(int, not_in))
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch(f"SELECT * FROM banlist WHERE NOT (id = ANY($1::BIGINT[]))", not_in)
+            rows = await conn.fetch(
+                'SELECT * FROM banlist WHERE NOT (id = ANY($1::BIGINT[]))', not_in
+            )
+
         return [BannedUser(row['id'], row['reason']) for row in rows]
 
 
@@ -195,10 +197,7 @@ class Strafanzeigen(TableWrapper):
     async def get(self, key) -> Optional[str]:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow('SELECT data FROM strafanzeigen WHERE key = $1', key)
-        if row:
-            return row['data']
-        else:
-            return None
+        return row['data'] if row else None
 
 
 class Postgres:  # pylint: disable = R0902

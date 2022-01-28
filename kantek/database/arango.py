@@ -102,8 +102,7 @@ class AutobahnBlacklist(Collection):
             return None
 
     async def get_by_value(self, item: str) -> Optional[BlacklistItem]:
-        doc = self.fetchByExample({'string': item}, batchSize=1)
-        if doc:
+        if doc := self.fetchByExample({'string': item}, batchSize=1):
             doc = doc[0]
             return BlacklistItem(doc["_key"], doc['string'], False)
         else:
@@ -361,8 +360,7 @@ class ArangoDB:  # pylint: disable = R0902
         config = Config()
         if self.db.hasCollection(collection):
             return self.db[collection]
+        if config.db_cluster_mode:
+            return self.db.createCollection(collection, replication_factor=1)
         else:
-            if config.db_cluster_mode:
-                return self.db.createCollection(collection, replication_factor=1)
-            else:
-                return self.db.createCollection(collection)
+            return self.db.createCollection(collection)

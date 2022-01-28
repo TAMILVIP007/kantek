@@ -77,15 +77,20 @@ async def args(args: List, kwargs: Dict) -> MDTeXDocument:
         {cmd} posarg -flag 125e-5
 
     """
-    _args = []
-    for arg in args:
-        _args.append(SubSection(Code(arg),
-                                KeyValueItem('type', Code(type(arg).__name__))))
-    keyword_args = []
-    for key, value in kwargs.items():
-        keyword_args.append(SubSection(Code(key),
-                                       KeyValueItem('value', Code(value)),
-                                       KeyValueItem('type', Code(type(value).__name__))))
+    _args = [
+        SubSection(Code(arg), KeyValueItem('type', Code(type(arg).__name__)))
+        for arg in args
+    ]
+
+    keyword_args = [
+        SubSection(
+            Code(key),
+            KeyValueItem('value', Code(value)),
+            KeyValueItem('type', Code(type(value).__name__)),
+        )
+        for key, value in kwargs.items()
+    ]
+
     return MDTeXDocument(
         Section('Args', *_args),
         Section('Keyword Args', *keyword_args),

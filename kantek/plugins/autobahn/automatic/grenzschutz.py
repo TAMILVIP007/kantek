@@ -21,7 +21,7 @@ logger: logging.Logger = logzero.logger
 
 @k.event(events.chataction.ChatAction())
 @k.event(events.NewMessage(), name='grenzschutz')
-async def grenzschutz(event: Union[ChatAction.Event, NewMessage.Event]) -> None:  # pylint: disable = R0911
+async def grenzschutz(event: Union[ChatAction.Event, NewMessage.Event]) -> None:    # pylint: disable = R0911
     """Automatically ban gbanned users.
 
     This plugin will ban gbanned users upon joining,getting added to the group or when writing a message. A message will be sent to notify Users of the action, this message will be deleted after 5 minutes.
@@ -40,7 +40,6 @@ async def grenzschutz(event: Union[ChatAction.Event, NewMessage.Event]) -> None:
         if event.user_left or event.user_kicked:
             return
 
-    if isinstance(event, ChatAction.Event):
         if event.action_message is None:
             return
         elif not isinstance(event.action_message.action,
@@ -50,9 +49,8 @@ async def grenzschutz(event: Union[ChatAction.Event, NewMessage.Event]) -> None:
     chat: Channel = await event.get_chat()
     if not chat.creator and not chat.admin_rights:
         return
-    if chat.admin_rights:
-        if not chat.admin_rights.ban_users:
-            return
+    if chat.admin_rights and not chat.admin_rights.ban_users:
+        return
     db: Database = client.db
     tags = await Tags.create(event)
     polizei_tag = tags.get('polizei')

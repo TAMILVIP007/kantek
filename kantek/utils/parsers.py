@@ -137,14 +137,14 @@ def arguments(args: str) -> Tuple[Dict[str, KeywordArgument], List[Value]]:
     keyword_args: Dict[str, KeywordArgument] = {}
     for name, value in _named_attrs:
         if value.startswith('"') and value.endswith('"'):
-            keyword_args.update({name: re.sub(r'\"', '', value)})
+            keyword_args[name] = re.sub(r'\"', '', value)
             continue
 
         val = re.sub(r'\"', '', value)
         val = _parse_types(val)
         if isinstance(val, str):
             val = _parse_types(val)
-        keyword_args.update({name: val})
+        keyword_args[name] = val
 
     args = re.sub(KEYWORD_ARGUMENT, '', args)
 
@@ -191,7 +191,7 @@ def time(expr) -> int:
 
     Returns: The time in seconds
     """
-    total_duration = 0
-    for duration, unit in EXPR_PATTERN.findall(expr):
-        total_duration += int(duration) * MULTIPLICATION_MAP[unit]
-    return total_duration
+    return sum(
+        int(duration) * MULTIPLICATION_MAP[unit]
+        for duration, unit in EXPR_PATTERN.findall(expr)
+    )

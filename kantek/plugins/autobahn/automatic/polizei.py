@@ -94,9 +94,14 @@ async def join_polizei(event: ChatAction.Event) -> None:
             photo_hash = await hash_photo(dl_photo)
 
             for mhash in mhash_blacklist:
-                if mhash and not mhash.retired:
-                    if hashes_are_similar(mhash.value, photo_hash, tolerance=2):
-                        ban_type, ban_reason = db.blacklists.mhash.hex_type, mhash.index
+                if (
+                    mhash
+                    and not mhash.retired
+                    and hashes_are_similar(
+                        mhash.value, photo_hash, tolerance=2
+                    )
+                ):
+                    ban_type, ban_reason = db.blacklists.mhash.hex_type, mhash.index
 
     if ban_type and ban_reason:
         await _banuser(event, chat, event.user_id, bancmd, ban_type, ban_reason)
@@ -110,10 +115,9 @@ async def _banuser(event, chat, userid, bancmd, ban_type, ban_reason):
     admin = chat.creator or chat.admin_rights
     await event.delete()
     old_ban = await db.banlist.get(userid)
-    if old_ban:
-        if old_ban.reason == formatted_reason:
-            logger.info('User ID `%s` already banned for the same reason.', userid)
-            return
+    if old_ban and old_ban.reason == formatted_reason:
+        logger.info('User ID `%s` already banned for the same reason.', userid)
+        return
     if admin:
         if bancmd == 'manual':
             await client.ban(chat, userid)
@@ -243,9 +247,14 @@ async def _check_message(event):  # pylint: disable = R0911
                         try:
                             photo_hash = await hash_photo(profile_photo)
                             for mhash in await db.blacklists.mhash.get_all():
-                                if mhash and not mhash.retired:
-                                    if hashes_are_similar(mhash.value, photo_hash, tolerance=2):
-                                        return db.blacklists.mhash.hex_type, mhash.index
+                                if (
+                                    mhash
+                                    and not mhash.retired
+                                    and hashes_are_similar(
+                                        mhash.value, photo_hash, tolerance=2
+                                    )
+                                ):
+                                    return db.blacklists.mhash.hex_type, mhash.index
                         except UnidentifiedImageError:
                             pass
 
@@ -297,9 +306,6 @@ async def _check_message(event):  # pylint: disable = R0911
                 result = await db.blacklists.file.get_by_value(filehash)
                 if result:
                     return db.blacklists.file.hex_type, result.index
-        else:
-            pass
-
     if msg.photo:
         try:
             dl_photo = await msg.download_media(bytes)

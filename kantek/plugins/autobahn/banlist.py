@@ -68,34 +68,34 @@ async def import_(client: Client, db: Database, msg: Message) -> MDTeXDocument:
     Examples:
         {cmd}
     """
-    if msg.is_reply:  # pylint: disable = R1702
-        reply_msg: Message = await msg.get_reply_message()
-        _, ext = os.path.splitext(reply_msg.document.attributes[0].file_name)
-        if ext == '.csv':
-            data = await reply_msg.download_media(bytes)
-            start_time = time.time()
-            _banlist = await helpers.rose_csv_to_dict(data)
-            if _banlist:
-                await db.banlist.upsert_multiple(_banlist)
-                if client.sw and client.sw.permission in [Permission.Admin, Permission.Root]:
-                    bans = {}
-                    for b in _banlist:
-                        bans[b['reason']] = bans.get(b['reason'], []) + [b['id']]
-                    admin_id = (await client.get_me()).id
-                    for reason, uids in bans.items():
-                        uids_copy = uids[:]
-                        while uids_copy:
-                            client.sw.add_bans([Ban(int(uid), reason, admin_id)
-                                                for uid in uids_copy[:SWAPI_SLICE_LENGTH]])
-                            uids_copy = uids_copy[SWAPI_SLICE_LENGTH:]
+    if not msg.is_reply:  # pylint: disable = R1702
+        return
+    reply_msg: Message = await msg.get_reply_message()
+    _, ext = os.path.splitext(reply_msg.document.attributes[0].file_name)
+    if ext != '.csv':
+        return MDTeXDocument(Section('Error',
+                                     'File is not a CSV'))
+    data = await reply_msg.download_media(bytes)
+    start_time = time.time()
+    _banlist = await helpers.rose_csv_to_dict(data)
+    if _banlist:
+        await db.banlist.upsert_multiple(_banlist)
+        if client.sw and client.sw.permission in [Permission.Admin, Permission.Root]:
+            bans = {}
+            for b in _banlist:
+                bans[b['reason']] = bans.get(b['reason'], []) + [b['id']]
+            admin_id = (await client.get_me()).id
+            for reason, uids in bans.items():
+                uids_copy = uids[:]
+                while uids_copy:
+                    client.sw.add_bans([Ban(int(uid), reason, admin_id)
+                                        for uid in uids_copy[:SWAPI_SLICE_LENGTH]])
+                    uids_copy = uids_copy[SWAPI_SLICE_LENGTH:]
 
-            stop_time = time.time() - start_time
-            return MDTeXDocument(Section('Import Result',
-                                         f'Added {len(_banlist)} entries.'),
-                                 Italic(f'Took {stop_time:.02f}s'))
-        else:
-            return MDTeXDocument(Section('Error',
-                                         'File is not a CSV'))
+    stop_time = time.time() - start_time
+    return MDTeXDocument(Section('Import Result',
+                                 f'Added {len(_banlist)} entries.'),
+                         Italic(f'Took {stop_time:.02f}s'))
 
 
 @banlist.subcommand()

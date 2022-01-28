@@ -46,7 +46,7 @@ async def autobahn() -> MDTeXDocument:
 
 @autobahn.subcommand()
 async def add(client: Client, db: Database, msg: Message, args,
-              event) -> MDTeXDocument:  # pylint: disable = R1702
+              event) -> MDTeXDocument:    # pylint: disable = R1702
     """Add a item to its blacklist.
 
     Blacklist names are _not_ the hexadecimal short hands
@@ -114,53 +114,49 @@ async def add(client: Client, db: Database, msg: Message, args,
             existing_items.append(KeyValueItem(existing_one.index, Code(existing_one.value)))
 
     if not items and hex_type == '0x5':
-        if msg.is_reply:
-            reply_msg: Message = await msg.get_reply_message()
-            if reply_msg.file:
-                await msg.edit('Downloading file, this may take a while.')
-
-                file = await reply_msg.download_media(
-                    bytes,
-                    progress_callback=lambda r, t: _sync_file_callback(r, t, msg))
-                file_hash = helpers.hash_file(file)
-                await msg.delete()
-                existing_one = await blacklist.get(item)
-
-                if not existing_one:
-                    entry = await blacklist.add(file_hash)
-                    short_hash = f'{entry.value[:15]}[...]'
-                    KeyValueItem(entry.index, Code(short_hash))
-                else:
-                    existing_items.append(KeyValueItem(existing_one.index, Code(existing_one.value)))
-            else:
-                return MDTeXDocument(Section('Error', 'Need to reply to a file'))
-        else:
+        if not msg.is_reply:
             return MDTeXDocument(Section('Error', 'Need to reply to a file'))
-    if not items and hex_type == '0x6':
-        if msg.is_reply:
-            reply_msg: Message = await msg.get_reply_message()
-            if reply_msg.photo:
-                await msg.edit('Hashing photo, this may take a moment.')
+        reply_msg: Message = await msg.get_reply_message()
+        if not reply_msg.file:
+            return MDTeXDocument(Section('Error', 'Need to reply to a file'))
+        await msg.edit('Downloading file, this may take a while.')
 
-                dl_photo = await reply_msg.download_media(bytes)
-                photo_hash = await helpers.hash_photo(dl_photo)
-                await msg.delete()
-                existing_one = await blacklist.get_by_value(photo_hash)
+        file = await reply_msg.download_media(
+            bytes,
+            progress_callback=lambda r, t: _sync_file_callback(r, t, msg))
+        file_hash = helpers.hash_file(file)
+        await msg.delete()
+        existing_one = await blacklist.get(item)
 
-                if not existing_one:
-                    entry = await blacklist.add(photo_hash)
-                    if Counter(photo_hash).get('0', 0) > 8:
-                        warn_message = ('The image seems to contain a lot of the same color.'
-                                        ' This might lead to false positives.')
-
-                    added_items.append(KeyValueItem(entry.index, Code(entry.value)))
-                else:
-                    existing_items.append(KeyValueItem(existing_one.index, Code(existing_one.value)))
-            else:
-                return MDTeXDocument(Section('Error', 'Need to reply to a photo'))
+        if not existing_one:
+            entry = await blacklist.add(file_hash)
+            short_hash = f'{entry.value[:15]}[...]'
+            KeyValueItem(entry.index, Code(short_hash))
         else:
+            existing_items.append(KeyValueItem(existing_one.index, Code(existing_one.value)))
+    if not items and hex_type == '0x6':
+        if not msg.is_reply:
             return MDTeXDocument(Section('Error', 'Need to reply to a photo'))
 
+        reply_msg: Message = await msg.get_reply_message()
+        if not reply_msg.photo:
+            return MDTeXDocument(Section('Error', 'Need to reply to a photo'))
+        await msg.edit('Hashing photo, this may take a moment.')
+
+        dl_photo = await reply_msg.download_media(bytes)
+        photo_hash = await helpers.hash_photo(dl_photo)
+        await msg.delete()
+        existing_one = await blacklist.get_by_value(photo_hash)
+
+        if not existing_one:
+            entry = await blacklist.add(photo_hash)
+            if Counter(photo_hash).get('0', 0) > 8:
+                warn_message = ('The image seems to contain a lot of the same color.'
+                                ' This might lead to false positives.')
+
+            added_items.append(KeyValueItem(entry.index, Code(entry.value)))
+        else:
+            existing_items.append(KeyValueItem(existing_one.index, Code(existing_one.value)))
     return MDTeXDocument(Section('Added Items:',
                                  SubSection(item_type,
                                             *added_items)) if added_items else '',

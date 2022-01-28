@@ -45,10 +45,7 @@ class TGChannelLogHandler(Handler):
             'msg': record.getMessage(),
             'traceback': f'```\n{formatted_traceback}```' if formatted_traceback else ''
         }
-        log_entry = []
-        for k, v in _log_entry.items():
-            if v:
-                log_entry.append(f'`{k}:` {v}')
+        log_entry = [f'`{k}:` {v}' for k, v in _log_entry.items() if v]
         return '\n'.join(log_entry)
 
     def emit(self, record: LogRecord) -> None:

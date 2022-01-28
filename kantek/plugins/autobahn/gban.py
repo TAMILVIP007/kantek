@@ -53,24 +53,18 @@ async def gban(client: Client, db: Database, tags: Tags, chat: Channel, msg: Mes
         {cmd}
     """
     _gban = tags.get('gban')
-    if event.is_private:
-        admin = False
-    else:
-        admin = bool(chat.creator or chat.admin_rights)
+    admin = False if event.is_private else bool(chat.creator or chat.admin_rights)
     only_joinspam = kwargs.get('only_joinspam', False) or kwargs.get('oj', False)
-    sa_key = kwargs.get('sa')
-    anzeige = None
-    if sa_key:
+    if sa_key := kwargs.get('sa'):
         anzeige = await db.strafanzeigen.get(sa_key)
-
+    else:
+        anzeige = None
     if anzeige:
         _kw, _args = parsers.arguments(anzeige)
         kwargs.update(_kw)
         args.extend(_args)
 
-    verbose = False
-    if _gban == 'verbose' or event.is_private:
-        verbose = True
+    verbose = bool(_gban == 'verbose' or event.is_private)
     await msg.delete()
     if msg.is_reply:
         bancmd = tags.get('gbancmd')
@@ -100,7 +94,7 @@ async def gban(client: Client, db: Database, tags: Tags, chat: Channel, msg: Mes
             if admin:
                 await client.ban(chat, uid)
 
-        elif bancmd is not None:
+        else:
             await reply_msg.reply(f'{bancmd} {ban_reason}')
             await asyncio.sleep(0.5)
 
@@ -122,8 +116,7 @@ async def gban(client: Client, db: Database, tags: Tags, chat: Channel, msg: Mes
 
         message = kwargs.get('msg')
         if not message:
-            link = kwargs.get('link')
-            if link:
+            if link := kwargs.get('link'):
                 try:
                     linked_msg: Message = await helpers.get_linked_message(client, link)
                     message = await helpers.textify_message(linked_msg)
@@ -147,8 +140,7 @@ async def gban(client: Client, db: Database, tags: Tags, chat: Channel, msg: Mes
                 else:
                     banned_uids[reason] = banned_uids.get(reason, []) + [str(uid)]
                 await asyncio.sleep(0.5)
-            uids = uids[CHUNK_SIZE:]
-            if uids:
+            if uids := uids[CHUNK_SIZE:]:
                 if progress_message:
                     await progress_message.edit(
                         f"Sleeping for 10 seconds after banning {len(uid_batch)} Users. {len(uids)} Users left.")

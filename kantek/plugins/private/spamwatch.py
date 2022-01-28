@@ -36,15 +36,14 @@ async def _token(event, client, args, keyword_args):
     command, *args = args
     msg: Message = event.message
     userid = [uid for uid in args if isinstance(uid, int)]
-    if not userid:
-        if msg.is_reply:
-            reply_message: Message = await msg.get_reply_message()
-            userid = reply_message.from_id
-        else:
-            return MDTeXDocument(Section('Missing Argument',
-                                         'A User ID is required.'))
-    else:
+    if userid:
         userid = userid[0]
+    elif msg.is_reply:
+        reply_message: Message = await msg.get_reply_message()
+        userid = reply_message.from_id
+    else:
+        return MDTeXDocument(Section('Missing Argument',
+                                     'A User ID is required.'))
     if command == 'create':
         from spamwatch.types import _permission_map  # pylint: disable = C0415
         permission = keyword_args.get('permission', 'User')
